@@ -1,0 +1,50 @@
+image: python:latest
+
+before_script:
+    - python -V
+    - pip install virtualenv
+    - virtualenv venv
+    - source venv/bin/activate
+
+stages:
+    - Build
+    - Python Lint
+    - Test and Coverage
+    - Zip Artifacts
+
+build-code-job:
+    stage: Build
+    script:
+        - pip install -r requirements.txt
+
+lint-code-job:
+    stage: Python Lint
+    script:
+        - pip install -r requirements.txt
+        - pip install pylint-fail-under
+        - pylint-fail-under --fail_under 5.0 *.py
+#         - pylint *py
+    allow_failure: true
+
+test-code-job:
+    stage: Test and Coverage
+    script:
+        - pip install -r requirements.txt
+        - pip install coverage
+        - coverage run --omit */site-packages/*,*/dist-packages/* test_car_manager.py
+        - coverage report
+    artifacts:
+        when: always
+        reports:
+            junit: test-reports/*.xml
+
+zip-code-job:
+    stage: Zip Artifacts
+    before_script:
+    - apt-get update -qy
+    - apt-get -y install zip unzip
+    script:
+        - zip app.zip *py
+    artifacts:
+        paths:
+            - app.zip
